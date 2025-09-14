@@ -1,10 +1,9 @@
-const { createClub, getAllClubs } = require('../controllers/clubController')
+const clubController = require('../controllers/clubController')
 const router = require('express').Router() 
-const { editClub } = require('../controllers/clubController')
-const { auth, authorizeRoles } = require('../middleware/authMiddleware')
+const AuthMiddleware = require('../middleware/authMiddleware')
 
-router.post('/createClub' , auth , authorizeRoles('admin') , createClub) // Only admin can create a club
-router.get('/allClubs' , getAllClubs)
-router.post('/editClub/:clubId' ,auth , authorizeRoles('admin') , editClub)
+router.post('/createClub' , AuthMiddleware.auth , AuthMiddleware.authorizeRoles('admin') , clubController.createClub.bind(clubController)) // Only admin can create a club
+router.get('/allClubs' , clubController.getAllClubs.bind(clubController))
+router.put('/editClub/:clubId' ,AuthMiddleware.auth , AuthMiddleware.authorizeRoles('admin') , clubController.editClub.bind(clubController)) // Only admin can edit a club
 
 module.exports = router
