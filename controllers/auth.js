@@ -5,9 +5,9 @@ const jwt = require('jsonwebtoken')
 
 exports.signup = async (req, res) => {
     try {
-        const { userName, email, password, role, college } = req.body
+        const { userName, email, password, role } = req.body
 
-        if (!userName || !email || !password || !role || !college) {
+        if (!userName || !email || !password.trim()) {
             return res.status(400).json({ success: false, message: "Incomplete credentials" })
         }
 
@@ -16,39 +16,35 @@ exports.signup = async (req, res) => {
             return res.status(400).json({ success: false, message: "User already exists" })
         }
 
-        const coll = await College.findOne({ collegeName: college })
-        if (!coll) {
-            coll = await College.create({
-                collegeName : college ,
-            })
-            console.log("New college created")
-        }
-
         const hashedPassword = await bcrypt.hash(password, 10)
         const newUser = await User.create({
             userName: userName,
             email: email,
             password: hashedPassword,
-            role: role,
-            college: coll._id 
+            role: role
         })
 
-        await College.findByIdAndUpdate(coll._id , {
-            $push : {
-                student : newUser._id
-            }
-        })
+        if (!newUser) {
+            return res.status(500).json({ success: false, message: "Error in creating user" })
+        }
 
         // Optionally, create a JWT token on signup
         const payload = {
             _id: newUser._id,
             email: newUser.email,
             role: newUser.role,
-            college: newUser.college
         }
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' })
 
+        res.cookie('token',token,{
+            httpOnly : true ,
+            secure : true , // Use this in production with HTTPS
+            sameSite : 'strict',
+            maxAge : 7*24*60*60*1000 // 7 days
+        })
+
         return res.status(201).json({ success: true, message: "Signup successful", user: newUser, token })
+
     } catch (error) {
         console.log(error)
         return res.status(500).json({ success: false, message: "Issue while signing up" })
@@ -59,7 +55,7 @@ exports.login = async (req, res) => {
     try {
         const { email, password } = req.body
 
-        if (!email || !password) {
+        if (!email || !password.trim()) {
             return res.status(400).json({ success: false, message: "Incomplete credentials" })
         }
 
@@ -77,10 +73,16 @@ exports.login = async (req, res) => {
             _id: existingUser._id,
             email: existingUser.email,
             role: existingUser.role,
-            college: existingUser.college
         }
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' })
+
+        res.cookie('token',token,{
+            httpOnly : true ,
+            secure : true , // Use this in production with HTTPS
+            sameSite : 'strict',
+            maxAge : 7*24*60*60*1000 // 7 days
+        })
 
         return res.status(200).json({ success: true, message: "Login successful", token })
     } catch (error) {
@@ -88,3 +90,14 @@ exports.login = async (req, res) => {
         return res.status(500).json({ success: false, message: "Issue while logging in" })
     }
 }  
+
+exports.logout = async (req, res) => {
+    try {
+        res.clearCookie('token') // Clear the cookie -> 'token'
+
+        return res.status(200).json({ success: true, message: "Logout successful" })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ success: false, message: "Issue while logging out" })
+    }   
+}

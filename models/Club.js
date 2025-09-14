@@ -6,14 +6,28 @@ const clubSchema = new mongoose.Schema({
         required :true ,
         trim : true
     },
+    clubDescription : {
+        type : String ,
+        required : true ,
+        trim : true
+    },
+    clubPhotos : [{
+        type : String ,
+        required : true
+    }],
     clubAdmin : [{
-        type : mongoose.Schema.Types.ObjectId ,
-        ref : "User"
+        type : String ,
     }],
     members : [{
         type : mongoose.Schema.Types.ObjectId,
         ref : "User"
-    }]
+    }],
+    recentEvents : [
+        {
+            type : mongoose.Schema.Types.ObjectId ,
+            ref : "Event" 
+        }
+    ]
 })
 
-module.exports = mongoose.model("College" , collegeSchema)
+module.exports = mongoose.model("Club" , clubSchema)

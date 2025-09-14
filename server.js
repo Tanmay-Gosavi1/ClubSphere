@@ -3,18 +3,31 @@ const app = express()
 const connectDB = require('./config/db.js')
 require('dotenv').config()
 const cookieParser = require('cookie-parser')
+const morgan = require('morgan')
+const cloudinary = require('./config/cloudinary.js')
+const fileUpload = require('express-fileupload')
+
 const authRouter = require('./routes/authRoutes.js')
+const clubRoutes = require('./routes/clubRoutes.js')
+const cloudinaryConnect = require('./config/cloudinary.js')
 
 //Middlewares
+app.use(morgan('dev'))
 app.use(express.json())
 app.use(express.urlencoded({extended : true}))
 app.use(cookieParser())
+app.use(fileUpload({
+    useTempFiles : true ,
+    tempFileDir : '/tmp/'
+}))
+cloudinaryConnect()
 
 //Routes
 app.get('/' , (req,res)=>{
     res.send("Welcome to ClubSphere !!")
 })
 app.use('/api/auth' , authRouter)
+app.use('/api/club' , clubRoutes)
 
 //Db connect
 connectDB()

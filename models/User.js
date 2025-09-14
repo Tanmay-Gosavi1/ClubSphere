@@ -18,19 +18,16 @@ const userSchema = new mongoose.Schema({
     },
     role : {
         type : String ,
-        enum  : ["CollegeAdmin" , "ClubAdmin" , "Student"] ,
+        enum  : ["admin" , "user"] ,
+        default : "user" ,
         required : true
-    },
-    college : {
-        type : mongoose.Schema.Types.ObjectId ,
-        ref : "College"
     },
     club : [
         {
         type : mongoose.Schema.Types.ObjectId ,
         ref : "Club"
-        }      
-    ],
+        }   
+    ]
 })
 
 module.exports = mongoose.model("User" , userSchema)
