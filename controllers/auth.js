@@ -3,11 +3,12 @@ const bcrypt = require('bcryptjs')
 const College = require('../models/College.js')
 const jwt = require('jsonwebtoken')
 
+
 exports.signup = async (req, res) => {
     try {
-        const { userName, email, password, role } = req.body
+        const { userName, email, password, college } = req.body
 
-        if (!userName || !email || !password.trim()) {
+        if (!userName || !email || !password.trim() || !college) {
             return res.status(400).json({ success: false, message: "Incomplete credentials" })
         }
 
@@ -16,23 +17,41 @@ exports.signup = async (req, res) => {
             return res.status(400).json({ success: false, message: "User already exists" })
         }
 
+        // Check if college exists
+        const isCollegeExists = await College.findOne({ collegeName: college })
+        let collegeId;
+        
+        if (!isCollegeExists) {
+            // Create college if it doesn't exist
+            const newCollege = await College.create({ collegeName: college })
+            collegeId = newCollege._id;
+        } else {
+            collegeId = isCollegeExists._id;
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10)
         const newUser = await User.create({
             userName: userName,
             email: email,
             password: hashedPassword,
-            role: role
+            college: collegeId
         })
 
         if (!newUser) {
             return res.status(500).json({ success: false, message: "Error in creating user" })
         }
 
+        // Add user to college's student array
+        await College.findByIdAndUpdate(collegeId, {
+            $push: { student: newUser._id }
+        })
+
         // Optionally, create a JWT token on signup
         const payload = {
             _id: newUser._id,
             email: newUser.email,
             role: newUser.role,
+            college: newUser.college
         }
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' })
 
